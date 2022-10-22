@@ -4,15 +4,35 @@ import { useRouter } from "next/router";
 import { useState, useEffect } from "react";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { toast } from "react-toastify";
 
 const Post = () => {
   //FOrm state
   const [post, setPost] = useState({ description: "" });
   const [user, loading] = useAuthState(auth);
+  const route = useRouter();
+
+  const updateData = route.query;
 
   const submitPost = async (e) => {
     e.preventDefault();
-    // make a new post
+    //? checks for description
+    if (!post.description) {
+      toast.error("Description is empty", {
+        position: toast.POSITION.TOP_CENTER,
+        autoClose: 1500,
+      });
+      return;
+    }
+    if (post.description.length > 300) {
+      toast.error("Description too long", {
+        position: toast.POSITION.TOP_CENTER,
+        autoClose: 1500,
+      });
+      return;
+    }
+
+    //* make a new post
     const collectionRef = collection(db, "posts");
     await addDoc(collectionRef, {
       ...post,
@@ -21,9 +41,25 @@ const Post = () => {
       avatar: user.photoURL,
       username: user.displayName,
     });
+    setPost({ description: "" });
+    return route.push("/");
   };
 
-  return (
+// console.log(route);
+
+// * check user
+
+const checkUser = async() => {
+  if(loading) return;
+  if(!user) route.push('/auth/login');
+};
+
+useEffect(()=>{
+  checkUser();
+},[user,loading])
+
+return (
+
     <div className="my-20 p-12 shadow-lg rounded-lg max-w-md mx-auto">
       <form onSubmit={submitPost}>
         <h1 className="text-2xl font-bold">Create a new post</h1>
